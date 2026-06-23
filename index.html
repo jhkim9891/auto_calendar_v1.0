@@ -2,7 +2,13 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="루틴 캘린더">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>연간 루틴 캘린더</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
 <style>
@@ -83,8 +89,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 /* ── main ── */
 .main{flex:1;padding:10px 14px;overflow-y:auto;min-width:0;background:var(--bg)}
 .top-bar{display:flex;align-items:center;gap:6px;margin-bottom:8px}
-.month-title{font-size:15px;font-weight:500;flex:1}
-.top-bar select{font-size:11px;padding:3px 6px;background:var(--bg);color:var(--t1);border:0.5px solid var(--bm);border-radius:var(--r)}
+.top-bar select{font-size:13px;font-weight:500;padding:3px 6px;background:var(--bg);color:var(--t1);border:0.5px solid var(--bm);border-radius:var(--r)}
 .tabs{display:flex;border-bottom:0.5px solid var(--bl);margin-bottom:8px}
 .tab{font-size:11px;padding:5px 14px;border:none;background:none;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px}
 .tab.active{color:var(--bb2);border-bottom:2px solid var(--bb2);font-weight:500}
@@ -136,8 +141,10 @@ button:hover{background:var(--bg2)}
 <div class="main">
   <div class="top-bar">
     <button id="prevBtn" aria-label="이전달"><i class="ti ti-chevron-left"></i></button>
-    <span class="month-title" id="monthTitle"></span>
+    <select id="yearSel"></select>
     <select id="monthSel"></select>
+    <div style="flex:1"></div>
+    <button id="todayBtn" style="font-size:11px;padding:4px 9px">오늘</button>
     <button id="nextBtn" aria-label="다음달"><i class="ti ti-chevron-right"></i></button>
   </div>
   <div class="tabs">
@@ -501,26 +508,60 @@ function getTasksForDate(yr, mo, dy) {
   return tasks;
 }
 
-// ── 월 선택 ──
+// ── 연도/월 선택 ──
+const TODAY = new Date();
+const BASE_YEAR = TODAY.getFullYear();
+const MIN_YEAR = BASE_YEAR - 5;
+const MAX_YEAR = BASE_YEAR + 1;
+
+function buildYearSel() {
+  const sel = document.getElementById("yearSel");
+  sel.innerHTML = "";
+  for (let y = MIN_YEAR; y <= MAX_YEAR; y++) {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y + "년";
+    if (y === curYear) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
 function buildMonthSel() {
   const sel = document.getElementById("monthSel");
   sel.innerHTML = "";
   MONTHS_KO.forEach(function(m, i) {
     const opt = document.createElement("option");
-    opt.value = i+1;
-    opt.textContent = curYear+"년 "+m;
-    if (i+1 === curMonth) opt.selected = true;
+    opt.value = i + 1;
+    opt.textContent = m;
+    if (i + 1 === curMonth) opt.selected = true;
     sel.appendChild(opt);
   });
 }
-document.getElementById("prevBtn").addEventListener("click", function() {
-  curMonth--; if (curMonth<1){curMonth=12;curYear--;} buildMonthSel(); renderCalendar();
-});
-document.getElementById("nextBtn").addEventListener("click", function() {
-  curMonth++; if (curMonth>12){curMonth=1;curYear++;} buildMonthSel(); renderCalendar();
+document.getElementById("yearSel").addEventListener("change", function() {
+  curYear = parseInt(this.value); renderCalendar();
 });
 document.getElementById("monthSel").addEventListener("change", function() {
   curMonth = parseInt(this.value); renderCalendar();
+});
+document.getElementById("prevBtn").addEventListener("click", function() {
+  curMonth--;
+  if (curMonth < 1) {
+    if (curYear <= MIN_YEAR) { curMonth = 1; return; }
+    curMonth = 12; curYear--;
+  }
+  buildYearSel(); buildMonthSel(); renderCalendar();
+});
+document.getElementById("nextBtn").addEventListener("click", function() {
+  curMonth++;
+  if (curMonth > 12) {
+    if (curYear >= MAX_YEAR) { curMonth = 12; return; }
+    curMonth = 1; curYear++;
+  }
+  buildYearSel(); buildMonthSel(); renderCalendar();
+});
+document.getElementById("todayBtn").addEventListener("click", function() {
+  curYear = TODAY.getFullYear();
+  curMonth = TODAY.getMonth() + 1;
+  buildYearSel(); buildMonthSel(); renderCalendar();
 });
 
 // ── 탭 ──
@@ -533,8 +574,7 @@ document.getElementById("tabEdit").addEventListener("click", function() {
 
 // ── 캘린더 렌더 ──
 function renderCalendar() {
-  document.getElementById("monthTitle").textContent = curYear+"년 "+curMonth+"월";
-  buildMonthSel();
+  buildYearSel(); buildMonthSel();
   const firstDay = new Date(curYear, curMonth-1, 1).getDay();
   const daysInM = new Date(curYear, curMonth, 0).getDate();
   const todayD = new Date();
@@ -614,7 +654,13 @@ document.getElementById("calOut").addEventListener("click", function(e) {
 
 // ── 초기화 ──
 buildList();
+buildYearSel();
 renderCalendar();
+
+// ── Service Worker 등록 ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
 </script>
 </body>
 </html>

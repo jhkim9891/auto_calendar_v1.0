@@ -160,19 +160,7 @@ const CYCLES = [
   {val:"annual",label:"연 1회"},
   {val:"specific",label:"특정날짜"},
 ];
-const defaultTodos = [
-  {name:"건강검진 예약",months:"1",cycle:"annual"},
-  {name:"가족사진 촬영",months:"1",cycle:"annual"},
-  {name:"카드 바우처 신청",months:"6",cycle:"annual"},
-  {name:"연금저축 납입",months:"1",cycle:"annual"},
-  {name:"아이사진 프린트",months:"6-30",cycle:"specific"},
-  {name:"이불 교체",months:"6,10",cycle:"biannual"},
-  {name:"계절옷 정리",months:"6,10",cycle:"biannual"},
-  {name:"(빨래)침구커버",months:"2,6,10",cycle:"biannual"},
-  {name:"(빨래)베개커버",months:"매월",cycle:"weekly2"},
-  {name:"필사",months:"매월",cycle:"daily"},
-  {name:"일기",months:"매월",cycle:"daily"},
-];
+const defaultTodos = [];
 
 let todos = JSON.parse(JSON.stringify(defaultTodos));
 let currentYear = new Date().getFullYear();

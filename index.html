@@ -94,8 +94,8 @@ button.primary{background:var(--blue-bg);color:var(--blue-text);border-color:var
       <table class="todo-table">
         <thead><tr>
           <th style="width:36%">항목</th>
-          <th style="width:28%">월/일</th>
-          <th style="width:26%">주기</th>
+          <th style="width:24%">월</th>
+          <th style="width:30%">주기</th>
           <th style="width:10%"></th>
         </tr></thead>
         <tbody id="todoBody"></tbody>
@@ -106,7 +106,7 @@ button.primary{background:var(--blue-bg);color:var(--blue-text);border-color:var
       </div>
       <div class="legend">
         <div class="leg-item"><div class="leg-dot" style="background:var(--blue-bg);border:0.5px solid var(--blue-border)"></div>매일</div>
-        <div class="leg-item"><div class="leg-dot" style="background:var(--green-bg);border:0.5px solid #639922"></div>주 2회</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--green-bg);border:0.5px solid #639922"></div>주 N회</div>
         <div class="leg-item"><div class="leg-dot" style="background:var(--purple-bg);border:0.5px solid #534AB7"></div>연 2~3회</div>
         <div class="leg-item"><div class="leg-dot" style="background:var(--red-bg);border:0.5px solid #993C1D"></div>연 1회</div>
         <div class="leg-item"><div class="leg-dot" style="background:var(--amber-bg);border:0.5px solid #854F0B"></div>특정날짜</div>
@@ -134,16 +134,10 @@ button.primary{background:var(--blue-bg);color:var(--blue-text);border-color:var
     <h3 id="modalTitle">할 일 추가</h3>
     <label>항목 이름</label>
     <input id="mName" placeholder="예: 건강검진 예약" />
-    <label>월/일 <span style="color:var(--text-tertiary)">(예: 6 · 6-30 · 6,10 · 매월)</span></label>
+    <label>월 <span style="color:var(--text-tertiary)">(예: 6 · 6-30 · 6,10 · 매월)</span></label>
     <input id="mMonths" placeholder="6 또는 6-30 또는 매월" />
-    <label>주기</label>
-    <select id="mCycle">
-      <option value="daily">매일</option>
-      <option value="weekly2">주 2회</option>
-      <option value="biannual">연 2~3회</option>
-      <option value="annual">연 1회</option>
-      <option value="specific">특정날짜</option>
-    </select>
+    <label>주기 <span style="color:var(--text-tertiary)">(예: 매일 · 주 2회 · 연 1회 · 연 2회)</span></label>
+    <input id="mCycle" placeholder="매일 · 주 2회 · 연 1회 등" />
     <div class="modal-btns">
       <button class="danger" id="delModalBtn" style="display:none;margin-right:auto"><i class="ti ti-trash"></i> 삭제</button>
       <button id="cancelModalBtn">취소</button>
@@ -153,13 +147,6 @@ button.primary{background:var(--blue-bg);color:var(--blue-text);border-color:var
 </div>
 
 <script>
-const CYCLES = [
-  {val:"daily",label:"매일"},
-  {val:"weekly2",label:"주 2회"},
-  {val:"biannual",label:"연 2~3회"},
-  {val:"annual",label:"연 1회"},
-  {val:"specific",label:"특정날짜"},
-];
 const defaultTodos = [];
 
 let todos = JSON.parse(JSON.stringify(defaultTodos));
@@ -170,7 +157,12 @@ let sidebarOpen = true;
 let modalMode = null, modalEditIdx = null;
 
 function cClass(c) {
-  return {daily:"t-daily",weekly2:"t-weekly2",biannual:"t-biannual",annual:"t-annual",specific:"t-specific"}[c] || "t-annual";
+  const s = (c || "").trim();
+  if (s === "매일") return "t-daily";
+  if (s.startsWith("주")) return "t-weekly2";
+  if (s === "특정날짜") return "t-specific";
+  if (s.startsWith("연 1") || s === "연1회" || s === "연 1회") return "t-annual";
+  return "t-biannual";
 }
 
 // ── 사이드바 접기 ──
@@ -203,17 +195,12 @@ function buildTodoBody() {
     tdMonths.appendChild(inpMonths);
 
     const tdCycle = document.createElement("td");
-    const sel = document.createElement("select");
-    sel.dataset.field = "cycle";
-    sel.dataset.idx = i;
-    CYCLES.forEach(function(c) {
-      const opt = document.createElement("option");
-      opt.value = c.val;
-      opt.textContent = c.label;
-      if (t.cycle === c.val) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    tdCycle.appendChild(sel);
+    const inpCycle = document.createElement("input");
+    inpCycle.value = t.cycle;
+    inpCycle.placeholder = "매일·연 1회 등";
+    inpCycle.dataset.field = "cycle";
+    inpCycle.dataset.idx = i;
+    tdCycle.appendChild(inpCycle);
 
     const tdDel = document.createElement("td");
     const delBtn = document.createElement("button");
@@ -313,13 +300,17 @@ function getTasksForDate(yr, mo, dy) {
   const tasks = [];
   const dow = new Date(yr, mo - 1, dy).getDay();
   todos.forEach(function(t, idx) {
+    const c = (t.cycle || "").trim();
     const inM = t.months === "매월" || parseMonths(t.months).includes(mo);
-    if (t.cycle === "daily" && inM) tasks.push({name:t.name, cycle:t.cycle, idx:idx});
-    else if (t.cycle === "weekly2" && inM && (dow === 2 || dow === 5)) tasks.push({name:t.name, cycle:t.cycle, idx:idx});
-    else if ((t.cycle === "annual" || t.cycle === "biannual") && parseMonths(t.months).includes(mo) && dy === 1) tasks.push({name:t.name, cycle:t.cycle, idx:idx});
-    else if (t.cycle === "specific") {
+    if (c === "매일" && inM) {
+      tasks.push({name:t.name, cycle:c, idx:idx});
+    } else if (c.startsWith("주") && inM && (dow === 2 || dow === 5)) {
+      tasks.push({name:t.name, cycle:c, idx:idx});
+    } else if (c === "특정날짜") {
       const p = parseSpecific(t.months);
-      if (p && p.month === mo && p.day === dy) tasks.push({name:t.name, cycle:t.cycle, idx:idx});
+      if (p && p.month === mo && p.day === dy) tasks.push({name:t.name, cycle:c, idx:idx});
+    } else if (inM && dy === 1 && c !== "" && c !== "매일" && !c.startsWith("주") && c !== "특정날짜") {
+      tasks.push({name:t.name, cycle:c, idx:idx});
     }
   });
   return tasks;
@@ -409,7 +400,7 @@ function openAddModal(day) {
   document.getElementById("modalTitle").textContent = currentMonth + "월 " + day + "일 할 일 추가";
   document.getElementById("mName").value = "";
   document.getElementById("mMonths").value = currentMonth + "-" + day;
-  document.getElementById("mCycle").value = "specific";
+  document.getElementById("mCycle").value = "특정날짜";
   document.getElementById("delModalBtn").style.display = "none";
   document.getElementById("modalOverlay").className = "modal-overlay open";
 }

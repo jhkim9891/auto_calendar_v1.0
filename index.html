@@ -41,7 +41,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sa
 .resizer:hover,.resizer.dragging{background:rgba(24,95,165,0.07)}
 /* 루틴 row */
 .rt-row{border-bottom:0.5px solid var(--bl)}
-.rt-summary{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:6px 4px;cursor:default}
+.rt-summary{display:grid;grid-template-columns:16px 1fr auto auto;align-items:center;gap:4px;padding:6px 4px;cursor:default}
 .rt-name{font-size:11px;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .rt-pill{font-size:10px;padding:1px 6px;border-radius:20px;white-space:nowrap}
 .pill-daily{background:var(--bb);color:var(--bt)}
@@ -113,13 +113,10 @@ button:hover{background:var(--bg2)}
 .dn.today{background:#378add;color:#fff;border-radius:50%;font-size:10px}
 .dn.sun{color:#e24b4a}
 .dn.sat{color:#378add}
-.task{font-size:10px;padding:1px 4px;border-radius:3px;margin-bottom:2px;line-height:1.4;word-break:keep-all;display:flex;align-items:center;flex-wrap:wrap;gap:2px}
+.task{font-size:10px;padding:1px 4px;border-radius:3px;margin-bottom:2px;line-height:1.4;word-break:keep-all;display:flex;align-items:center;flex-wrap:wrap;gap:2px;border-left:2.5px solid transparent}
 .task.ed{cursor:pointer}.task.ed:hover{opacity:0.8}
-.t-d{color:var(--bt);background:var(--bb)}
-.t-w{color:var(--gt);background:var(--gb)}
-.t-a{color:var(--rt);background:var(--rb)}
-.t-m{color:var(--pt);background:var(--pb)}
-.t-s{color:var(--at);background:var(--ab)}
+.task.cat-todo{background:#E6F1FB;color:#0C447C;border-left-color:#185FA5}
+.task.cat-wish{background:#FBEAF0;color:#72243E;border-left-color:#993556}
 .task-time{font-size:9px;font-weight:700;opacity:0.75;white-space:nowrap}
 .task-bell{font-size:9px;opacity:0.55}
 .task-name{flex:1;min-width:0}
@@ -154,7 +151,7 @@ button:hover{background:var(--bg2)}
   .cal{width:100% !important}
   .cal td{height:auto !important;min-height:72px}
   .task{font-size:8pt !important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .t-d,.t-w,.t-a,.t-m,.t-s{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .t-d,.t-w,.t-a,.t-m,.t-s,.cat-todo,.cat-wish{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   textarea{border:0.5px solid #ccc !important;resize:none !important}
 }
 </style>
@@ -168,15 +165,12 @@ button:hover{background:var(--bg2)}
     <svg class="ic" id="sbIcon" style="font-size:13px;color:var(--t2);transition:transform 0.2s" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
   </div>
   <div class="sb-body" id="sbBody">
+    <div style="display:flex;border-bottom:0.5px solid var(--bl);margin-bottom:6px">
+      <button id="tabTodo" style="flex:1;border:none;border-radius:0;background:none;padding:6px 4px;font-size:11px;font-weight:600;cursor:pointer;border-bottom:2px solid var(--bb2);color:var(--bb2)">TO DO</button>
+      <button id="tabWish" style="flex:1;border:none;border-radius:0;background:none;padding:6px 4px;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--t3)">WISH</button>
+    </div>
     <div id="rtList"></div>
     <button class="add-rt-btn" id="addRtBtn"><svg class="ic" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> 루틴 추가</button>
-    <div class="legend">
-      <div class="leg-i"><div class="leg-d" style="background:var(--bb);border:0.5px solid var(--bb2)"></div>매일</div>
-      <div class="leg-i"><div class="leg-d" style="background:var(--gb);border:0.5px solid #639922"></div>주 N회</div>
-      <div class="leg-i"><div class="leg-d" style="background:var(--pb);border:0.5px solid #534AB7"></div>연 2회+</div>
-      <div class="leg-i"><div class="leg-d" style="background:var(--rb);border:0.5px solid #993C1D"></div>연 1회</div>
-      <div class="leg-i"><div class="leg-d" style="background:var(--ab);border:0.5px solid #854F0B"></div>특정 날짜</div>
-    </div>
   </div>
 </div>
 
@@ -247,6 +241,7 @@ let curMonth = TODAY.getMonth() + 1;
 let curTab = "view";
 let sbOpen = true;
 let editingIdx = null;
+let curCat = "todo"; // "todo" | "wish"
 
 // ── 분류 헬퍼 ──
 function pillClass(t) {
@@ -275,6 +270,20 @@ function pillLabel(t) {
   return f;
 }
 
+// ── TO DO / WISH 탭 (추가 시 구분용) ──
+function setTab(cat) {
+  curCat = cat; editingIdx = null;
+  const todo = document.getElementById("tabTodo");
+  const wish = document.getElementById("tabWish");
+  const onStyle = "flex:1;border:none;border-radius:0;background:none;padding:6px 4px;font-size:11px;font-weight:700;cursor:pointer;border-bottom:2px solid var(--bb2);color:var(--bb2)";
+  const offStyle = "flex:1;border:none;border-radius:0;background:none;padding:6px 4px;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--t3)";
+  todo.style.cssText = cat==="todo" ? onStyle : offStyle;
+  wish.style.cssText = cat==="wish" ? onStyle : offStyle;
+  buildList();
+}
+document.getElementById("tabTodo").addEventListener("click", function(){ setTab("todo"); });
+document.getElementById("tabWish").addEventListener("click", function(){ setTab("wish"); });
+
 // ── 사이드바 접기 ──
 document.getElementById("sbHd").addEventListener("click", function() {
   sbOpen = !sbOpen;
@@ -286,14 +295,39 @@ document.getElementById("sbHd").addEventListener("click", function() {
 function buildList() {
   const container = document.getElementById("rtList");
   container.innerHTML = "";
-  todos.forEach(function(t, i) {
+  if (todos.length===0) {
+    const empty = document.createElement("div");
+    empty.style.cssText="text-align:center;padding:20px 8px;font-size:11px;color:var(--t3)";
+    empty.textContent = "루틴이 없어요";
+    container.appendChild(empty);
+  }
+  todos.forEach(function(t) {
+    const i = todos.indexOf(t);
     const wrap = document.createElement("div");
     wrap.className = "rt-row";
+    wrap.dataset.idx = i;
+    wrap.draggable = true;
     const summary = document.createElement("div");
     summary.className = "rt-summary";
+
+    // 드래그 핸들 (꾹 누르면 활성화)
+    const handle = document.createElement("div");
+    handle.style.cssText="flex-shrink:0;width:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:grab;opacity:0.25;touch-action:none;padding:2px 0";
+    handle.innerHTML='<span style="display:block;width:10px;height:1.5px;background:currentColor;border-radius:1px"></span><span style="display:block;width:10px;height:1.5px;background:currentColor;border-radius:1px"></span><span style="display:block;width:10px;height:1.5px;background:currentColor;border-radius:1px"></span>';
+
     const name = document.createElement("div");
     name.className = "rt-name";
-    name.textContent = t.name || "이름 없음";
+    name.style.cssText="display:flex;align-items:center;gap:4px;overflow:hidden";
+    const catBadge = document.createElement("span");
+    const isWish = (t.cat||"todo")==="wish";
+    catBadge.textContent = isWish ? "W" : "T";
+    catBadge.style.cssText="font-size:9px;font-weight:700;flex-shrink:0;width:14px;height:14px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;"
+      +(isWish ? "background:#EEEDFE;color:#3C3489;" : "background:#E6F1FB;color:#0C447C;");
+    const nameText = document.createElement("span");
+    nameText.style.cssText="overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+    nameText.textContent = t.name || "이름 없음";
+    name.appendChild(catBadge);
+    name.appendChild(nameText);
     const pill = document.createElement("span");
     pill.className = "rt-pill "+pillClass(t);
     pill.textContent = pillLabel(t);
@@ -307,6 +341,7 @@ function buildList() {
       editingIdx = (editingIdx===idx) ? null : idx;
       buildList();
     });
+    summary.appendChild(handle);
     summary.appendChild(name);
     summary.appendChild(pill);
     summary.appendChild(editBtn);
@@ -314,12 +349,131 @@ function buildList() {
     if (editingIdx===i) wrap.appendChild(buildPanel(i));
     container.appendChild(wrap);
   });
+
+  // ── 드래그 & 터치 순서 변경 ──
+  initSortable(container);
+}
+
+// ── 순서 변경 (드래그 & 터치) ──
+function initSortable(container) {
+  var dragSrc = null;
+  var placeholder = null;
+
+  function getRow(el) { return el.closest(".rt-row"); }
+
+  function createPlaceholder(h) {
+    var p = document.createElement("div");
+    p.className = "rt-row";
+    p.style.cssText = "height:"+h+"px;background:var(--bb);opacity:0.3;border-radius:4px;border:1.5px dashed var(--bb2)";
+    return p;
+  }
+
+  // ── 마우스 드래그 ──
+  container.addEventListener("dragstart", function(e) {
+    var row = getRow(e.target); if(!row) return;
+    dragSrc = row;
+    dragSrc.style.opacity = "0.4";
+    placeholder = createPlaceholder(row.offsetHeight);
+    e.dataTransfer.effectAllowed = "move";
+  });
+  container.addEventListener("dragover", function(e) {
+    e.preventDefault(); e.dataTransfer.dropEffect = "move";
+    var row = getRow(e.target);
+    if (!row || row===dragSrc || row===placeholder) return;
+    var rect = row.getBoundingClientRect();
+    var mid = rect.top + rect.height/2;
+    if (e.clientY < mid) container.insertBefore(placeholder, row);
+    else container.insertBefore(placeholder, row.nextSibling);
+  });
+  container.addEventListener("dragend", function() {
+    if (!dragSrc) return;
+    dragSrc.style.opacity = "";
+    if (placeholder && placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(dragSrc, placeholder);
+      placeholder.remove();
+    }
+    applyNewOrder(container);
+    dragSrc = null; placeholder = null;
+  });
+
+  // ── 터치 (꾹 누르기) ──
+  var touchRow = null, touchClone = null, longTimer = null;
+  var touchOffX = 0, touchOffY = 0;
+
+  container.addEventListener("touchstart", function(e) {
+    var row = getRow(e.target); if(!row) return;
+    var touch = e.touches[0];
+    longTimer = setTimeout(function() {
+      touchRow = row;
+      var rect = row.getBoundingClientRect();
+      touchOffX = touch.clientX - rect.left;
+      touchOffY = touch.clientY - rect.top;
+
+      // 클론 생성
+      touchClone = row.cloneNode(true);
+      touchClone.style.cssText = "position:fixed;left:"+(rect.left)+"px;top:"+(rect.top)+"px;width:"+rect.width+"px;opacity:0.85;z-index:9999;pointer-events:none;background:var(--bg);box-shadow:0 4px 16px rgba(0,0,0,0.18);border-radius:6px";
+      document.body.appendChild(touchClone);
+
+      placeholder = createPlaceholder(rect.height);
+      row.parentNode.insertBefore(placeholder, row);
+      row.style.display = "none";
+
+      // 진동 피드백
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 450);
+  }, {passive:true});
+
+  container.addEventListener("touchmove", function(e) {
+    clearTimeout(longTimer);
+    if (!touchRow) return;
+    e.preventDefault();
+    var touch = e.touches[0];
+    touchClone.style.left = (touch.clientX - touchOffX)+"px";
+    touchClone.style.top  = (touch.clientY - touchOffY)+"px";
+
+    // 아래 요소 찾기
+    touchClone.style.display = "none";
+    var el = document.elementFromPoint(touch.clientX, touch.clientY);
+    touchClone.style.display = "";
+    var row = el ? getRow(el) : null;
+    if (row && row!==placeholder) {
+      var rect = row.getBoundingClientRect();
+      if (touch.clientY < rect.top + rect.height/2) container.insertBefore(placeholder, row);
+      else container.insertBefore(placeholder, row.nextSibling);
+    }
+  }, {passive:false});
+
+  function endTouch() {
+    clearTimeout(longTimer);
+    if (!touchRow) return;
+    if (touchClone) { touchClone.remove(); touchClone=null; }
+    touchRow.style.display = "";
+    if (placeholder && placeholder.parentNode) {
+      placeholder.parentNode.insertBefore(touchRow, placeholder);
+      placeholder.remove();
+    }
+    applyNewOrder(container);
+    touchRow = null; placeholder = null;
+  }
+  container.addEventListener("touchend",    endTouch, {passive:true});
+  container.addEventListener("touchcancel", endTouch, {passive:true});
+}
+
+function applyNewOrder(container) {
+  var rows = container.querySelectorAll(".rt-row[data-idx]");
+  var newTodos = [];
+  rows.forEach(function(r) { newTodos.push(todos[parseInt(r.dataset.idx)]); });
+  todos = newTodos;
+  saveTodos();
+  editingIdx = null;
+  buildList();
+  renderCalendar();
 }
 
 // ── 편집 패널 ──
 function buildPanel(idx) {
   const t = idx===-1
-    ? {name:"",freqType:"매일",freqN:1,months:[],days:[],specificMonth:curMonth,specificDay:1}
+    ? {name:"",freqType:"매일",freqN:1,months:[],days:[],specificMonth:curMonth,specificDay:1,cat:curCat}
     : JSON.parse(JSON.stringify(todos[idx]));
   const panel = document.createElement("div");
   panel.className = "rt-panel";
@@ -331,7 +485,65 @@ function buildPanel(idx) {
   nameField.appendChild(nameLbl); nameField.appendChild(nameInp);
   panel.appendChild(nameField);
 
-  // 월 선택
+  // ── 카테고리 ──
+  const catField = document.createElement("div"); catField.className="panel-field";
+  const catLbl = document.createElement("span"); catLbl.className="panel-label"; catLbl.textContent="구분";
+  const catSeg = document.createElement("div"); catSeg.className="seg";
+  [{val:"todo",label:"TO DO"},{val:"wish",label:"WISH"}].forEach(function(opt){
+    const btn = document.createElement("button");
+    btn.className = "seg-btn"+((t.cat||"todo")===opt.val?" on":"");
+    btn.textContent = opt.label;
+    btn.addEventListener("click", function(){
+      t.cat = opt.val;
+      catSeg.querySelectorAll(".seg-btn").forEach(function(b){b.classList.remove("on");});
+      this.classList.add("on");
+    });
+    catSeg.appendChild(btn);
+  });
+  catField.appendChild(catLbl); catField.appendChild(catSeg);
+  panel.appendChild(catField);
+  const freqField = document.createElement("div"); freqField.className="panel-field";
+  const freqLbl = document.createElement("span"); freqLbl.className="panel-label"; freqLbl.textContent="주기";
+  freqField.appendChild(freqLbl);
+  const seg = document.createElement("div"); seg.className="seg";
+
+  // 주기별 설명
+  const freqDesc = document.createElement("div");
+  freqDesc.style.cssText="font-size:10px;color:var(--t3);margin-top:4px;margin-bottom:6px;min-height:14px";
+
+  const subArea = document.createElement("div");
+
+  var FREQ_DESCS = {
+    "매일": "선택한 월마다 매일 표시돼요",
+    "주 N회": "선택한 월 안에서 매주 N회 표시돼요",
+    "월 N회": "선택한 월마다 N회 표시돼요",
+    "연 N회": "1년에 N회 — 월 선택 없이 자동 분산돼요",
+    "특정 날짜": "지정한 날짜에만 표시돼요 — 월/일 직접 입력"
+  };
+
+  FREQ_TYPES.forEach(function(ft) {
+    const btn = document.createElement("button");
+    btn.className = "seg-btn"+(t.freqType===ft?" on":"");
+    btn.textContent = ft;
+    btn.addEventListener("click", function() {
+      t.freqType=ft;
+      if (!t.freqN) t.freqN=1;
+      // 연 N회/특정 날짜는 월 선택 초기화
+      if (ft==="연 N회"||ft==="특정 날짜") t.months=[];
+      seg.querySelectorAll(".seg-btn").forEach(function(b){b.classList.remove("on");});
+      this.classList.add("on");
+      freqDesc.textContent = FREQ_DESCS[ft]||"";
+      renderMonthField();
+      renderSubArea();
+    });
+    seg.appendChild(btn);
+  });
+  freqDesc.textContent = FREQ_DESCS[t.freqType]||"";
+  freqField.appendChild(seg);
+  freqField.appendChild(freqDesc);
+  panel.appendChild(freqField);
+
+  // ── 월 선택 (주기에 따라 조건부 표시) ──
   const monthField = document.createElement("div"); monthField.className="panel-field";
   const monthLbl = document.createElement("span"); monthLbl.className="panel-label"; monthLbl.textContent="실행 월";
   const chipWrap = document.createElement("div"); chipWrap.className="chip-wrap";
@@ -360,32 +572,27 @@ function buildPanel(idx) {
     });
   }
   monthField.appendChild(monthLbl); monthField.appendChild(chipWrap);
+
+  function renderMonthField() {
+    const f = t.freqType;
+    // 연 N회, 특정 날짜는 월 선택 숨김
+    if (f==="연 N회"||f==="특정 날짜") {
+      monthField.style.display="none";
+    } else {
+      monthField.style.display="";
+    }
+  }
+  renderMonthField();
   panel.appendChild(monthField);
 
-  // 주기
-  const freqField = document.createElement("div"); freqField.className="panel-field";
-  const freqLbl = document.createElement("span"); freqLbl.className="panel-label"; freqLbl.textContent="주기";
-  freqField.appendChild(freqLbl);
-  const seg = document.createElement("div"); seg.className="seg";
-  const subArea = document.createElement("div");
-  FREQ_TYPES.forEach(function(ft) {
-    const btn = document.createElement("button");
-    btn.className = "seg-btn"+(t.freqType===ft?" on":"");
-    btn.textContent = ft;
-    btn.addEventListener("click", function() {
-      t.freqType=ft; if (!t.freqN) t.freqN=1;
-      seg.querySelectorAll(".seg-btn").forEach(function(b){b.classList.remove("on");});
-      this.classList.add("on"); renderSubArea();
-    });
-    seg.appendChild(btn);
-  });
-  freqField.appendChild(seg);
-
+  // ── 세부 설정 ──
   function renderSubArea() {
     subArea.innerHTML="";
-    if (t.freqType==="매일") return;
+    const f = t.freqType;
+    if (f==="매일") return;
     const sp = document.createElement("div"); sp.className="sub-panel";
-    if (t.freqType==="주 N회") {
+
+    if (f==="주 N회") {
       const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="주 몇 회"; sp.appendChild(sl);
       sp.appendChild(makeNumRow(t,"freqN",1,7,"회/주"));
       const dl=document.createElement("div"); dl.className="sub-label"; dl.style.marginTop="8px"; dl.textContent="요일 선택 (선택)"; sp.appendChild(dl);
@@ -402,14 +609,21 @@ function buildPanel(idx) {
         dc.appendChild(c);
       });
       sp.appendChild(dc);
-    } else if (t.freqType==="월 N회") {
-      const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="월 몇 회"; sp.appendChild(sl);
+
+    } else if (f==="월 N회") {
+      const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="월 몇 회 표시할까요?"; sp.appendChild(sl);
       sp.appendChild(makeNumRow(t,"freqN",1,31,"회/월"));
-    } else if (t.freqType==="연 N회") {
-      const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="연 몇 회"; sp.appendChild(sl);
-      sp.appendChild(makeNumRow(t,"freqN",1,12,"회/년"));
-    } else if (t.freqType==="특정 날짜") {
-      const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="날짜 입력"; sp.appendChild(sl);
+      const note=document.createElement("div"); note.style.cssText="font-size:10px;color:var(--t3);margin-top:5px";
+      note.textContent="※ 선택한 월의 1일에 표시됩니다"; sp.appendChild(note);
+
+    } else if (f==="연 N회") {
+      const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="1년에 몇 회 하시나요?"; sp.appendChild(sl);
+      sp.appendChild(makeNumRow(t,"freqN",1,52,"회/년"));
+      const note=document.createElement("div"); note.style.cssText="font-size:10px;color:var(--t3);margin-top:5px";
+      note.textContent="※ 캘린더에는 참고용으로 1월 1일에 표시됩니다"; sp.appendChild(note);
+
+    } else if (f==="특정 날짜") {
+      const sl=document.createElement("div"); sl.className="sub-label"; sl.textContent="날짜를 지정해주세요"; sp.appendChild(sl);
       const dr=document.createElement("div"); dr.className="date-row";
       const mi=document.createElement("input"); mi.className="date-inp"; mi.type="number"; mi.min=1; mi.max=12; mi.value=t.specificMonth||curMonth; mi.placeholder="월";
       mi.addEventListener("input", function(){t.specificMonth=parseInt(this.value)||1;});
@@ -425,6 +639,7 @@ function buildPanel(idx) {
   renderSubArea();
   freqField.appendChild(subArea);
   panel.appendChild(freqField);
+  panel.appendChild(monthField);
 
   // ── 시간 & 알림 (선택) ──
   const alarmWrap = document.createElement("div");
@@ -629,7 +844,7 @@ function renderCalendar() {
         dn.textContent=d; dnWrap.appendChild(dn); td.appendChild(dnWrap);
         tasks.forEach(function(item) {
           const div=document.createElement("div");
-          div.className="task "+taskClass(item.t)+(curTab==="edit"?" ed":"");
+          div.className="task"+(curTab==="edit"?" ed":"")+" "+(item.t.cat==="wish"?"cat-wish":"cat-todo");
           // 시간 (앞에 표시)
           if (item.t.timeVal) {
             const ts=document.createElement("span"); ts.className="task-time"; ts.textContent=item.t.timeVal; div.appendChild(ts);
@@ -657,22 +872,48 @@ function renderCalendar() {
   }
   const out=document.getElementById("calOut"); out.innerHTML=""; out.appendChild(cal);
 
-  // ── 월 메모 ──
+  // ── 메모 3단 ──
   const memoWrap=document.createElement("div");
-  memoWrap.style.cssText="margin-top:12px;border:0.5px solid var(--bl);border-radius:var(--r);overflow:hidden";
-  const memoHd=document.createElement("div");
-  memoHd.style.cssText="padding:6px 10px;background:var(--bg2);font-size:11px;font-weight:500;color:var(--t2);border-bottom:0.5px solid var(--bl)";
-  memoHd.textContent=curMonth+"월 메모";
-  const memoTa=document.createElement("textarea");
-  memoTa.style.cssText="width:100%;min-height:80px;padding:8px 10px;font-size:11px;font-family:inherit;color:var(--t1);background:var(--bg);border:none;resize:vertical;outline:none;line-height:1.6";
-  memoTa.placeholder="이 달의 특이사항, 계획, 메모를 자유롭게 입력하세요...";
-  memoTa.value=loadMemo(curYear,curMonth);
-  let memoTimer=null;
-  memoTa.addEventListener("input",function(){
-    clearTimeout(memoTimer);
-    memoTimer=setTimeout(function(){ saveMemo(curYear,curMonth,memoTa.value); },400);
-  });
-  memoWrap.appendChild(memoHd); memoWrap.appendChild(memoTa);
+  memoWrap.style.cssText="margin-top:12px;border:0.5px solid var(--bl);border-radius:var(--r);overflow:hidden;display:grid;grid-template-columns:1fr 1fr 1fr";
+
+  function makeMemoCell(labelText, storageKey, placeholder) {
+    const cell=document.createElement("div");
+    cell.style.cssText="display:flex;flex-direction:column;border-right:0.5px solid var(--bl)";
+    cell.style.borderRight="0.5px solid var(--bl)";
+
+    const hd=document.createElement("div");
+    hd.style.cssText="padding:6px 10px;background:var(--bg2);font-size:11px;font-weight:500;color:var(--t2);border-bottom:0.5px solid var(--bl);flex-shrink:0";
+    hd.textContent=labelText;
+
+    const ta=document.createElement("textarea");
+    ta.style.cssText="flex:1;width:100%;min-height:80px;padding:8px 10px;font-size:11px;font-family:inherit;color:var(--t1);background:var(--bg);border:none;resize:vertical;outline:none;line-height:1.6";
+    ta.placeholder=placeholder;
+    try { ta.value=localStorage.getItem(storageKey)||""; } catch(e){}
+
+    let timer=null;
+    ta.addEventListener("input",function(){
+      clearTimeout(timer);
+      const val=this.value;
+      timer=setTimeout(function(){
+        try{ if(val) localStorage.setItem(storageKey,val); else localStorage.removeItem(storageKey); }catch(e){}
+      },400);
+    });
+
+    cell.appendChild(hd); cell.appendChild(ta);
+    return cell;
+  }
+
+  const yearCell  = makeMemoCell("🎯 올해 목표", "memo_year_"+curYear, "올해 이루고 싶은 목표를 적어보세요...");
+  const monthCell = makeMemoCell("📌 "+curMonth+"월 목표", "memo_month_"+curYear+"_"+curMonth, "이번 달 집중할 목표를 적어보세요...");
+  const freeCell  = makeMemoCell("📝 메모", "memo_free_"+curYear+"_"+curMonth, "자유롭게 메모하세요...");
+
+  freeCell.style.borderRight="0.5px solid var(--bl)";
+  monthCell.style.borderRight="0.5px solid var(--bl)";
+  yearCell.style.borderRight="none";
+
+  memoWrap.appendChild(freeCell);
+  memoWrap.appendChild(monthCell);
+  memoWrap.appendChild(yearCell);
   out.appendChild(memoWrap);
 }
 
@@ -833,8 +1074,14 @@ document.getElementById("calOut").addEventListener("click",function(e){
       content += "<div class='month-block'>";
       content += "<div class='month-title'>"+y+"년 "+m+"월 루틴 캘린더 ("+startD+"일~"+endD+"일)</div>";
       content += buildMonthHTML(y,m,startD,endD);
-      var memo = loadMemo(y,m);
-      if (memo) content += "<div class='memo'><div class='memo-hd'>"+m+"월 메모</div><div class='memo-body'>"+escHtml(memo)+"</div></div>";
+      var yearGoal="";  try{ yearGoal  = localStorage.getItem("memo_year_"+y)||""; }catch(e){}
+      var monthGoal=""; try{ monthGoal = localStorage.getItem("memo_month_"+y+"_"+m)||""; }catch(e){}
+      var freeMemo="";  try{ freeMemo  = localStorage.getItem("memo_free_"+y+"_"+m)||""; }catch(e){}
+      content += "<div style='display:grid;grid-template-columns:1fr 1fr 1fr;border:0.5px solid #ddd;border-radius:6px;overflow:hidden;margin-top:10px'>";
+      content += "<div style='border-right:0.5px solid #ddd'><div style='padding:5px 8px;background:#f5f5f0;font-size:10px;font-weight:600;color:#666;border-bottom:0.5px solid #ddd'>🎯 올해 목표</div><div style='padding:7px 8px;font-size:10px;min-height:50px;white-space:pre-wrap;color:#1a1a1a'>"+escHtml(yearGoal)+"</div></div>";
+      content += "<div style='border-right:0.5px solid #ddd'><div style='padding:5px 8px;background:#f5f5f0;font-size:10px;font-weight:600;color:#666;border-bottom:0.5px solid #ddd'>📌 "+m+"월 목표</div><div style='padding:7px 8px;font-size:10px;min-height:50px;white-space:pre-wrap;color:#1a1a1a'>"+escHtml(monthGoal)+"</div></div>";
+      content += "<div><div style='padding:5px 8px;background:#f5f5f0;font-size:10px;font-weight:600;color:#666;border-bottom:0.5px solid #ddd'>📝 메모</div><div style='padding:7px 8px;font-size:10px;min-height:50px;white-space:pre-wrap;color:#1a1a1a'>"+escHtml(freeMemo)+"</div></div>";
+      content += "</div>";
       content += "</div>";
       m++; if(m>12){m=1;y++;}
     }
@@ -854,8 +1101,9 @@ document.getElementById("calOut").addEventListener("click",function(e){
     +".dn.today{background:#378add;color:#fff;border-radius:50%}"
     +".dn.sun{color:#e24b4a}.dn.sat{color:#378add}"
     +".task{font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:2px;line-height:1.4;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
-    +".t-d{color:#0C447C;background:#E6F1FB}.t-w{color:#3B6D11;background:#EAF3DE}"
-    +".t-a{color:#712B13;background:#FAECE7}.t-m{color:#3C3489;background:#EEEDFE}.t-s{color:#633806;background:#FAEEDA}"
+    +".task{font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:2px;line-height:1.4;border-left:2.5px solid transparent;-webkit-print-color-adjust:exact;print-color-adjust:exact}"
+    +".cat-todo{background:#E6F1FB;color:#0C447C;border-left-color:#185FA5}"
+    +".cat-wish{background:#FBEAF0;color:#72243E;border-left-color:#993556}"
     +".task-time{font-size:8px;font-weight:700;opacity:0.75;margin-right:2px}"
     +".memo{margin-top:10px;border:0.5px solid #ddd;border-radius:8px;overflow:hidden}"
     +".memo-hd{padding:5px 10px;background:#f5f5f0;font-size:11px;font-weight:500;color:#666;border-bottom:0.5px solid #ddd}"
@@ -978,12 +1226,18 @@ document.getElementById("calOut").addEventListener("click",function(e){
       }
 
       // 메모
-      var memo = loadMemo(y,m);
-      if (memo) {
-        lines.push("");
-        lines.push("📝 "+m+"월 메모");
-        lines.push(memo);
-      }
+      var yearGoal  = ""; try{ yearGoal  = localStorage.getItem("memo_year_"+y)||""; }catch(e){}
+      var monthGoal = ""; try{ monthGoal = localStorage.getItem("memo_month_"+y+"_"+m)||""; }catch(e){}
+      var freeMemo  = ""; try{ freeMemo  = localStorage.getItem("memo_free_"+y+"_"+m)||""; }catch(e){}
+      lines.push("");
+      lines.push("🎯 올해 목표");
+      lines.push(yearGoal||"(없음)");
+      lines.push("");
+      lines.push("📌 "+m+"월 목표");
+      lines.push(monthGoal||"(없음)");
+      lines.push("");
+      lines.push("📝 메모");
+      lines.push(freeMemo||"(없음)");
 
       lines.push("");
       lines.push("──────────────────────────────────────");
@@ -1018,8 +1272,8 @@ document.getElementById("calOut").addEventListener("click",function(e){
           if (!outOfRange) {
             const tasks=getTasksForDate(y,m,d);
             tasks.forEach(function(item){
-              const tc=taskClass(item.t);
-              t+="<div class='task "+tc+"'>";
+              var catCls = (item.t.cat==="wish") ? "cat-wish" : "cat-todo";
+              t+="<div class='task "+catCls+"'>";
               if(item.t.timeVal) t+="<span class='task-time'>"+item.t.timeVal+"</span>";
               t+=escHtml(item.t.name)+"</div>";
             });

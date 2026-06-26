@@ -119,18 +119,18 @@ button:hover{background:var(--bg2)}
 .cal td{border:0.5px solid var(--bl);padding:4px;vertical-align:top;height:88px}
 .cal td.empty{background:var(--bg2);opacity:0.5}
 .dn-wrap{margin-bottom:3px}
-.dn{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;font-size:11px;font-weight:500;color:var(--t2)}
-.dn.today{background:#378add;color:#fff;border-radius:50%;font-size:10px}
+.dn{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;font-size:12px;font-weight:600;color:var(--t2)}
+.dn.today{background:#378add;color:#fff;border-radius:50%;font-size:11px}
 .dn.sun{color:#e24b4a}
 .dn.sat{color:#378add}
-.task{font-size:10px;padding:1px 4px;border-radius:3px;margin-bottom:2px;line-height:1.4;word-break:keep-all;display:flex;align-items:center;flex-wrap:wrap;gap:2px;border-left:2.5px solid transparent}
+.task{font-size:9px;padding:1px 4px;border-radius:3px;margin-bottom:2px;line-height:1.4;display:flex;align-items:center;gap:2px;border-left:2.5px solid transparent;overflow:hidden;white-space:nowrap}
 .task.ed{cursor:pointer}.task.ed:hover{opacity:0.8}
 .task.cat-todo{background:#E6F1FB;color:#0C447C;border-left-color:#185FA5}
 .task.cat-wish{background:#FBEAF0;color:#72243E;border-left-color:#993556}
-.task-time{font-size:9px;font-weight:700;opacity:0.75;white-space:nowrap}
-.task-bell{font-size:9px;opacity:0.55}
-.task-name{flex:1;min-width:0}
-.task-edit-ic{margin-left:auto;opacity:0.4;font-size:9px}
+.task-time{font-size:8px;font-weight:700;opacity:0.75;white-space:nowrap;flex-shrink:0}
+.task-bell{font-size:8px;opacity:0.55;flex-shrink:0}
+.task-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-edit-ic{margin-left:auto;opacity:0.4;font-size:8px;flex-shrink:0}
 .cal-add-btn{font-size:10px;padding:1px 3px;border:0.5px dashed var(--bm);border-radius:3px;background:none;color:var(--t3);cursor:pointer;width:100%;text-align:left;margin-top:2px}
 .cal-add-btn:hover{background:var(--bg2)}
 /* 모바일 */

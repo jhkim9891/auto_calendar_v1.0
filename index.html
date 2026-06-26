@@ -1224,7 +1224,15 @@ document.getElementById("calOut").addEventListener("click",function(e){
   const resizer=document.getElementById("resizer");
   const sb=document.getElementById("sb");
   let startX=0, startW=0, dragging=false;
-  const MIN_W=80, MAX_RATIO=0.6;
+  const MIN_W=60, MAX_RATIO=0.7;
+
+  // 리사이저를 터치하기 쉬운 넓은 영역으로 만들기
+  resizer.style.cssText += ";position:relative;";
+
+  // 투명한 넓은 터치 오버레이 추가
+  const touchArea = document.createElement("div");
+  touchArea.style.cssText = "position:absolute;top:0;left:-14px;right:-14px;bottom:0;z-index:20;cursor:col-resize;";
+  resizer.appendChild(touchArea);
 
   function startDrag(x){
     dragging=true; startX=x; startW=sb.getBoundingClientRect().width;
@@ -1246,20 +1254,29 @@ document.getElementById("calOut").addEventListener("click",function(e){
     document.body.style.webkitUserSelect="";
   }
 
-  resizer.addEventListener("mousedown",function(e){e.preventDefault();startDrag(e.clientX);});
+  // 마우스
+  [resizer, touchArea].forEach(function(el){
+    el.addEventListener("mousedown",function(e){e.preventDefault();startDrag(e.clientX);});
+  });
   document.addEventListener("mousemove",function(e){onDrag(e.clientX);});
   document.addEventListener("mouseup",endDrag);
 
-  // 터치: 핸들 자체 + 좌우 10px 여유 영역도 감지
-  resizer.addEventListener("touchstart",function(e){
-    e.preventDefault();
-    startDrag(e.touches[0].clientX);
-  },{passive:false});
+  // 터치 - touchArea에 직접 바인딩 + passive:false 필수
+  [resizer, touchArea].forEach(function(el){
+    el.addEventListener("touchstart",function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      startDrag(e.touches[0].clientX);
+    },{passive:false,capture:true});
+  });
   document.addEventListener("touchmove",function(e){
-    if(dragging){e.preventDefault();onDrag(e.touches[0].clientX);}
+    if(dragging){
+      e.preventDefault();
+      onDrag(e.touches[0].clientX);
+    }
   },{passive:false});
-  document.addEventListener("touchend",endDrag);
-  document.addEventListener("touchcancel",endDrag);
+  document.addEventListener("touchend",endDrag,{passive:true});
+  document.addEventListener("touchcancel",endDrag,{passive:true});
 })();
 
 // ── 초기화 ──

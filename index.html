@@ -982,12 +982,10 @@ function renderCalendar() {
         tasks.forEach(function(item) {
           const div=document.createElement("div");
           div.className="task "+(item.t.cat==="wish"?"cat-wish":"cat-todo");
-          // 특정 날짜 항목만 드래그 가능
-          if (item.t.freqType==="특정 날짜") {
-            div.draggable=true;
-            div.dataset.taskIdx=item.idx;
-            div.style.cursor="grab";
-          }
+          // 모든 항목 드래그 가능
+          div.draggable=true;
+          div.dataset.taskIdx=item.idx;
+          div.style.cursor="grab";
           // 시간 (앞에 표시)
           if (item.t.timeVal) {
             const ts=document.createElement("span"); ts.className="task-time"; ts.textContent=item.t.timeVal; div.appendChild(ts);
@@ -1098,8 +1096,11 @@ function renderCalendar() {
     var td = e.target.closest("td[data-day]");
     if (!td||dragIdx===null) return;
     var newDay = parseInt(td.dataset.day);
+    // 모든 타입 → 특정 날짜로 변환
+    todos[dragIdx].freqType = "특정 날짜";
     todos[dragIdx].specificDay = newDay;
     todos[dragIdx].specificMonth = curMonth;
+    todos[dragIdx].months = [];
     saveTodos(); renderCalendar(); buildList();
     dragIdx=null; highlightTd(td,false);
   });
@@ -1146,8 +1147,10 @@ function renderCalendar() {
     // 원래 항목 투명도 복구
     calOut.querySelectorAll("[data-task-idx='"+touchIdx+"']").forEach(function(el){ el.style.opacity=""; });
     if (overTd && overTd.dataset.day) {
+      todos[touchIdx].freqType = "특정 날짜";
       todos[touchIdx].specificDay = parseInt(overTd.dataset.day);
       todos[touchIdx].specificMonth = curMonth;
+      todos[touchIdx].months = [];
       saveTodos(); renderCalendar(); buildList();
     }
     highlightTd(overTd,false); overTd=null; touchIdx=null;

@@ -138,7 +138,8 @@ button:hover{background:var(--bg2)}
   html,body{width:100%;overflow-x:hidden}
   .app{flex-direction:row;height:100dvh;width:100vw;overflow:hidden}
   .sb{width:60vw !important;max-width:260px !important;min-width:unset !important;border-right:0.5px solid var(--bl);flex-shrink:0;overflow-y:auto}
-  .resizer{display:none}
+  .resizer{display:flex;width:20px}
+  .resizer::after{width:5px;height:48px}
   .main{flex:1;padding:6px 6px;overflow-y:auto;overflow-x:hidden;min-width:0;min-height:0}
   .top-bar{gap:3px}
   .top-bar select{font-size:11px;padding:2px 3px;max-width:72px}
@@ -503,7 +504,7 @@ function toggleSidebar() {
   const resizer = document.getElementById("resizer");
   const isMobile = window.innerWidth <= 768;
   sb.style.display = sbOpen ? "" : "none";
-  resizer.style.display = (sbOpen && !isMobile) ? "" : "none";
+  resizer.style.display = sbOpen ? "" : "none";
   const lbl = document.getElementById("sbToggleLbl");
   lbl.textContent = sbOpen
     ? (lang==="en" ? "Close List" : "목록 닫기")
